@@ -1,0 +1,41 @@
+<%= content_for :head do %>
+  <%= javascript_tag do -%>
+    <%== "var AUTH_TOKEN = #{form_authenticity_token.inspect};" if protect_against_forgery? %>
+  <% end -%>
+<% end %>
+
+<% if @cards.present? %>
+
+  <div id='card_notice'></div>
+
+  <h2>Credit Cards on File</h2>
+
+  <p class="field">
+    <table class="existing-credit-card-list" style="width:545px;">
+      <thead>
+        <tr>
+          <th>Card Number(last four)</th>
+          <th>Exp Month</th>
+          <th>Exp Year</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @cards.each do |card| %>
+          <tr id="<%= dom_id(card)%>" class="<%= cycle('even', 'odd') %>">
+            <td align="center"><%= card.last_digits %></td>
+            <td align="center"><%= card.month %></td>
+            <td align="center"><%= card.year %></td>
+            <td>
+            <%= link_to (icon('delete') + ' ' + t(:delete)),
+                spree.creditcard_url(card),
+                remote: true, method: :delete,
+                confirm: 'Are you sure?' %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+     </table>
+  </p>
+
+<% end %>

@@ -1,0 +1,67 @@
+<%= content_for :head do %>
+  <%= javascript_tag do -%>
+      <%== "var AUTH_TOKEN = #{form_authenticity_token.inspect};" if protect_against_forgery? %>
+      var original_button_text = "<%= t(:save_and_continue) %>";
+  <% end -%>
+<% end %>
+
+<div id='card_notice'></div>
+<% if @cards.present? %>
+  <div id="card_options">
+  <%= radio_button_tag 'use_existing_card', 'yes', true %>
+  <label>Use an existing card on file</label>
+  <br/>
+  <%= radio_button_tag 'use_existing_card', 'no' %>
+  <label>Use a new card</label>
+  </div>
+
+<div id="existing_cards">
+  <%= javascript_tag do -%>
+
+    $(document).ready(function () {
+
+      useExistingCardsInit();
+
+      // we are not on the 'my account' page, so let's plug in the
+      // appropriate callback for when a card is deleted
+      creditCardDeleteCallback = paymentPageResetCreditCardOptions;  
+    });
+  <% end %>
+
+  <p class="field" data-hook="existing_cards">
+    <h4>Existing Cards</h4>
+    <table class="existing-credit-card-list">
+      <thead>
+        <tr>
+          <th>Card Number (last four)</th>
+          <th>Expiration Month</th>
+          <th>Expiration Year</th>
+          <th>Use?</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @cards.each do |card| %>
+          <tr id="<%= dom_id(card,'spree')%>" class="<%= cycle('even', 'odd') %>">
+            <td><%= card.last_digits %></td>
+            <td><%= card.month %></td>
+            <td><%= card.year %></td>
+            <td><%= radio_button_tag "existing_card", card.id, (@cards.size ==1) %></td> <%# if we only have 1 saved card, autoselect %>
+            <td>
+            <%= link_to (image_tag("admin/icons/delete.png") + t(:delete)),
+                spree.creditcard_url(card),
+                remote: true, method: :delete,
+                confirm: 'Are you sure?' %>
+            </td>
+            <!-- #{param_prefix} -->
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </p>
+</div> <!-- existing_cards -->
+
+<% end %>
+
+
+
