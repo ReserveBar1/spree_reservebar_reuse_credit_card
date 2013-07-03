@@ -45,6 +45,8 @@ $(document).on('click', '#use_existing_card_no', function () {
                                        $("#existing_cards h4").hide();
                                        $("#existing_cards table").hide();
 
+                                       $("[data-hook=billing_fieldset_wrapper]").show();
+                                       $("[data-hook=name_on_card]").show();
                                        $("[data-hook=card_number]").show();
                                        $("[data-hook=card_expiration]").show();
                                        $("[data-hook=cart_code]").show(); // unfortunately this is a typo in spree (cart v card)
@@ -98,10 +100,13 @@ function useExistingCardsInit() {
   $("#existing_cards h4").show();
   $("#existing_cards table").show();
 
+  $("[data-hook=billing_fieldset_wrapper]").hide();
+  $("[data-hook=name_on_card]").hide();
   $("[data-hook=card_number]").hide();
   $("[data-hook=card_expiration]").hide();
   $("[data-hook=cart_code]").hide(); // unfortunately this is a typo in spree (cart v card)
 
+  disableFormRequiredFieldChecks();
   disableContinueButton();
 }
 
@@ -111,4 +116,12 @@ function disableContinueButton() {
     $(".form-buttons input[type=submit]").attr('disabled',true);
     $(".form-buttons input[type=submit]").val('Please Select a Card to Use');
   }
+}
+
+function disableFormRequiredFieldChecks() {
+	$(".form-buttons input[type=submit]").addClass('cancel');
+}
+
+function enableFormRequiredFieldChecks() {
+	$(".form-buttons input[type=submit]").removeClass('cancel');
 }

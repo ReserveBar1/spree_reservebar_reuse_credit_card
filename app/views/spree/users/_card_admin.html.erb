@@ -8,24 +8,26 @@
 
   <div id='card_notice'></div>
 
-  <h2>Credit Cards on File</h2>
+  <h3>Credit Cards on File</h3>
 
   <p class="field">
-    <table class="existing-credit-card-list" style="width:545px;">
+    <table class="existing-credit-card-list">
       <thead>
         <tr>
-          <th>Card Number(last four)</th>
-          <th>Exp Month</th>
-          <th>Exp Year</th>
+          <th>Name on Card</th>
+          <th>Card Number</th>
+          <th>Expiration</th>
+          <th>Billing Address</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         <% @cards.each do |card| %>
           <tr id="<%= dom_id(card)%>" class="<%= cycle('even', 'odd') %>">
-            <td align="center"><%= card.last_digits %></td>
-            <td align="center"><%= card.month %></td>
-            <td align="center"><%= card.year %></td>
+            <td align="center"><%= card.name %></td>
+            <td align="center"><%= card.display_number %></td>
+            <td align="center"><%= "#{card.month}/#{card.year}" %></td>
+			<td align="center"><%= card.address %></td>
             <td>
             <%= link_to (icon('delete') + ' ' + t(:delete)),
                 spree.creditcard_url(card),

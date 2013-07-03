@@ -10,7 +10,7 @@
   <div id="card_options">
   <%= radio_button_tag 'use_existing_card', 'yes', true %>
   <label>Use an existing card on file</label>
-  <br/>
+  &nbsp;&nbsp;
   <%= radio_button_tag 'use_existing_card', 'no' %>
   <label>Use a new card</label>
   </div>
@@ -33,26 +33,27 @@
     <table class="existing-credit-card-list">
       <thead>
         <tr>
-          <th>Card Number (last four)</th>
-          <th>Expiration Month</th>
-          <th>Expiration Year</th>
-          <th>Use?</th>
-          <th></th>
+          <th>Select</th>
+          <th>Name on Card</th>
+          <th>Card Number</th>
+          <th>Expiration</th>
+<!--         <th></th> -->
         </tr>
       </thead>
       <tbody>
         <% @cards.each do |card| %>
           <tr id="<%= dom_id(card,'spree')%>" class="<%= cycle('even', 'odd') %>">
-            <td><%= card.last_digits %></td>
-            <td><%= card.month %></td>
-            <td><%= card.year %></td>
-            <td><%= radio_button_tag "existing_card", card.id, (@cards.size ==1) %></td> <%# if we only have 1 saved card, autoselect %>
-            <td>
+          	<td><%= radio_button_tag "existing_card", card.id, (@cards.count == 1) %></td> <%# if we only have 1 saved card, autoselect %>
+            <td><%= card.name %></td>
+            <td><%= card.display_number %></td>
+            <td><%= "#{card.month}/#{card.year}" %></td>
+<!--            <td>
             <%= link_to (image_tag("admin/icons/delete.png") + t(:delete)),
                 spree.creditcard_url(card),
                 remote: true, method: :delete,
                 confirm: 'Are you sure?' %>
             </td>
+-->
             <!-- #{param_prefix} -->
           </tr>
         <% end %>
