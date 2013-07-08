@@ -32,6 +32,27 @@ module Spree
         if params[:payment_source].present? && source_params = params.delete(:payment_source)[params[:order][:payments_attributes].first[:payment_method_id].underscore]
           if params[:existing_card]
             creditcard = Spree::Creditcard.find(params[:existing_card])
+            # at this point the user may have selected a credit card that is tokenized on another retailer's account
+            # he should have entered the card number and cvv again and we need to tokenize this as a new card duped from the one he selected.
+            if creditcard.retailer_id != current_order.retailer.id
+              # clone the selected card and tokenize it, than make it the current card.
+              begin
+                new_card = creditcard.dup
+                new_card.number = params[:card_number_confirm]
+                new_card.verification_value = params[:card_cvv_confirm]
+                new_card.gateway_customer_profile_id = nil
+                new_card.gateway_payment_profile_id = nil
+                new_card.save!
+                Spree::Creditcard.tokenize_card_for_retailer(new_card, current_order.retailer, current_order.user, params[:card_number_confirm])
+                new_card.reload
+                creditcard = new_card
+                # Run tokenization for the other retailers in the background
+                Spree::Creditcard.delay.tokenize_card_on_other_retailers(current_order.retailer, new_card, current_order.user, params[:card_number_confirm])
+              rescue ActiveMerchant::ConnectionError => e
+                creditcard.send(:gateway_error, e)
+              end
+            end
+            # end processing new cards from new retailers
             authorize! :manage, creditcard
             params[:order][:payments_attributes].first[:source] = creditcard
             params[:order][:bill_address_id] = creditcard.address_id
