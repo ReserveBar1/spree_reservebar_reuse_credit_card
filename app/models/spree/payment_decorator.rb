@@ -17,7 +17,7 @@ Spree::Payment.class_eval do
   def create_payment_profile
     return unless source.is_a?(Spree::Creditcard) && source.number && !source.has_payment_profile?
     # If the user is not logged in, use the original function to just tokenize the the user on a single retailer's gateway
-    return create_payment_profile_original if order.user.anonymous?
+    return create_payment_profile_original if (order.user.anonymous? || !Spree::Config[:use_credit_card_tokenization])
     # Tokenize the card for the order's retailer
     card_number = source.number # save it for later so we can reload other items
     begin

@@ -1,3 +1,4 @@
+
 Deface::Override.new(
                      :name => 'add_credit_card_list_to_user_account_form',
                      :virtual_path => 'spree/users/show',
