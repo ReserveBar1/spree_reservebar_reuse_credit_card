@@ -2,7 +2,7 @@
 Gem::Specification.new do |s|
   s.platform    = Gem::Platform::RUBY
   s.name        = 'spree_reservebar_reuse_credit_card'
-  s.version     = '1.0.4'
+  s.version     = '1.0.5'
   s.summary     = 'Enables view enhancements for managing multiple previously-used credit cards for Spree'
   s.description = 'Enables view enhancements for managing multiple previously-used credit cards for Spree'
   s.required_ruby_version = '>= 1.8.7'

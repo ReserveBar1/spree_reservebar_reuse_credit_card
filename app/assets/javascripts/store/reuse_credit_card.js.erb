@@ -1,4 +1,6 @@
+<% require "#{Rails.root}/config/initializers/spree_reservebar_reuse_credit_card" %>
 
+<% if Spree::ReservebarReuseCreditCard::Config.enabled == true %>
 var creditCardDeleteCallback=$.noop();
 
 function displayCreditCardDeleteStatus(notice) {
@@ -128,3 +130,4 @@ function enableFormRequiredFieldChecks() {
 	$(".form-buttons input[type=submit]").removeClass('cancel');
 }
 
+<% end %>

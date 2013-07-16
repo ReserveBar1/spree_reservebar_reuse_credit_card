@@ -1,0 +1,15 @@
+<% require "#{Rails.root}/config/initializers/spree_reservebar_reuse_credit_card" %>
+
+<% if Spree::ReservebarReuseCreditCard::Config.enabled != true %>
+
+$(document).ready(function() {
+	try {
+		$('[name="order[payments_attributes][][payment_method_id]"]')[0].click();
+	} catch(err) {}
+});
+
+<% end %>
+
+
+
+
