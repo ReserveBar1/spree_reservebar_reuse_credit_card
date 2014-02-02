@@ -23,7 +23,7 @@ Spree::Creditcard.class_eval do
   
   # tokenize the card
   # if the creditcard passed in has been saved, use it and update it - this is used for the original retailer
-  # if the card passed in a  new record, it is a duplicate of the original and needs to be saved
+  # if the card passed in is a new record, it is a duplicate of the original and needs to be saved
   def self.tokenize_card_for_retailer(creditcard, retailer, user, number)
     Rails.logger.warn(" ----------------------- Processing retailer #{retailer.id}  ...")
     # Setup gateway for this retailer

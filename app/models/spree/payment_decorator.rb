@@ -4,7 +4,7 @@ Spree::Payment.class_eval do
   
   private
   # payment.after_save usually saves the credit card to the CIM gateway, if that is enabled. 
-  # For reservebar, we need to save it to all retailer's gateways instead and make user that they are added 
+  # For reservebar, we need to save it to all retailer's gateways instead and make sure that they are added 
   # to the customer's existing gateway_customer_profile, rather than having anew one created all the time 
   # We only do that for logged-in users, for logged-out users, we simply tokenize the card in the old fashioned way.
   def create_payment_profile_original
@@ -16,7 +16,7 @@ Spree::Payment.class_eval do
   
   def create_payment_profile
     return unless source.is_a?(Spree::Creditcard) && source.number && !source.has_payment_profile?
-    # If the user is not logged in, use the original function to just tokenize the the user on a single retailer's gateway
+    # If the user is not logged in, use the original function to just tokenize the user on a single retailer's gateway
     return create_payment_profile_original if (order.user.anonymous? || Spree::ReservebarReuseCreditCard::Config.enabled != true)
     # Tokenize the card for the order's retailer
     card_number = source.number # save it for later so we can reload other items
