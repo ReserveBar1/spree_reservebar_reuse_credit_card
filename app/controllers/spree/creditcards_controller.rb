@@ -1,7 +1,7 @@
 module Spree
   class CreditcardsController < Spree::BaseController
     ssl_allowed
-    respond_to :js
+    respond_to :js, :html
 
     def destroy
       @creditcard = Spree::Creditcard.find(params["id"])
@@ -17,7 +17,21 @@ module Spree
       else
         render template: 'spree/creditcards/destroy_error'
       end
+    end
 
+    def edit
+      @creditcard = Spree::Creditcard.find(params[:id])
+      @address = @creditcard.address.dup
+    end
+
+    def update
+      @creditcard = Spree::Creditcard.find(params[:id])
+
+      if @creditcard.update_address(params[:address])
+        flash[:notice] = I18n.t(:successfully_updated, :resource => I18n.t(:address))
+      else
+      end
+      redirect_back_or_default(account_path)
     end
 
     private

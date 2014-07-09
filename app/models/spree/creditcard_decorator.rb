@@ -2,12 +2,12 @@ Spree::Creditcard.class_eval do
   attr_accessible :number, :verification_value, :month, :year, :cc_type, :last_digits, :first_name, :last_name, :start_month, :start_year, :issue_number, :address_id, :created_at, :updated_at, :gateway_customer_profile_id, :gateway_payment_profile_id, :deleted_at
 
   belongs_to :address
-  
+
   def deleted?
     !!deleted_at
   end
-  
-  
+
+
   def self.tokenize_card_on_other_retailers(current_retailer, creditcard, user, card_number)
     # add card to customer profile for all other retailers, or create new customer profile and add card
     Spree::Retailer.active.each do |retailer|
@@ -20,7 +20,7 @@ Spree::Creditcard.class_eval do
       end
     end
   end
-  
+
   # tokenize the card
   # if the creditcard passed in has been saved, use it and update it - this is used for the original retailer
   # if the card passed in is a new record, it is a duplicate of the original and needs to be saved
@@ -63,8 +63,42 @@ Spree::Creditcard.class_eval do
       Rails.logger.warn(result.inspect)
       creditcard.update_attribute_without_callbacks(:gateway_payment_profile_id, result[:customer_payment_profile_id])
     end
-    
+
   end
-  
+
+  def update_address(attr = {})
+    address = Spree::Address.new(
+      :firstname => attr.fetch(:firstname),
+      :lastname => attr.fetch(:lastname),
+      :address1 => attr.fetch(:address1),
+      :address2 => attr.fetch(:address2) { nil },
+      :city => attr.fetch(:city),
+      :state => Spree::State.find(attr.fetch(:state_id)),
+      :zipcode => attr.fetch(:zipcode),
+      :country => Spree::Country.find(attr.fetch(:country_id)),
+      :county => attr.fetch(:county) { nil },
+      :phone => attr.fetch(:phone),
+      :user => self.user
+    )
+
+    if has_no_matching_address?(address) && address.save!
+      self.address = address
+      self.save
+    end
+  end
+
+  private
+
+  def has_matching_address?(addr)
+    attr = addr.attributes.except("id", "updated_at", "created_at", "county_lookup_failed")
+    matches = user.addresses.select {|a| a.attributes.except("id", "updated_at", "created_at", "county_lookup_failed") == attr}
+    matches.count > 0
+  end
+
+  def has_no_matching_address?(addr)
+    !has_matching_address?(addr)
+  end
+
+
 
 end
