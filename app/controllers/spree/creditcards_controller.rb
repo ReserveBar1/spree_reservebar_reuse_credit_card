@@ -20,7 +20,12 @@ module Spree
 
     def edit
       @creditcard = Spree::Creditcard.find(params[:id])
-      @address = @creditcard.address.dup
+      if @creditcard.address.present?
+        @address = @creditcard.address.dup
+      else
+        default_country = Spree::Country.find_by_name("United States")
+        @address = @creditcard.build_address(:country => default_country)
+      end
     end
 
     def update
