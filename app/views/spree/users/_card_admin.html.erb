@@ -20,6 +20,7 @@
           <th>Expiration</th>
           <th>Billing Address</th>
           <th></th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -28,13 +29,15 @@
             <td align="center"><%= card.name %></td>
             <td align="center"><%= card.display_number %></td>
             <td align="center"><%= "#{card.month}/#{card.year}" %></td>
-			<td align="center"><%= card.address %></td>
+			      <td align="center"><%= card.address %></td>
             <td>
             <%= link_to (icon('delete') + ' ' + t(:delete)),
                 spree.creditcard_url(card),
                 remote: true, method: :delete,
                 confirm: 'Are you sure?' %>
             </td>
+            <td>
+            <%= link_to (icon('edit') + ' ' + "Edit Address"), spree.edit_creditcard_url(card) %></td>
           </tr>
         <% end %>
       </tbody>
