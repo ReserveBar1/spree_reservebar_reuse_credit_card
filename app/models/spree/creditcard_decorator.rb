@@ -37,7 +37,11 @@ Spree::Creditcard.class_eval do
       Rails.logger.warn("  ---------------------- Result:")
       Rails.logger.warn(result.inspect)
       # TODO: error handlind of gateway errors
-      gateway_customer_profile_id = result[:customer_profile_id]
+      if result.class == Braintree::Customer
+        gateway_customer_profile_id = result.id
+      else
+        gateway_customer_profile_id = result[:customer_profile_id]
+      end
     end
     # test if this card is already tokenized for this retailer
     card = user.creditcards.where(:gateway_customer_profile_id => gateway_customer_profile_id, :last_digits => creditcard.last_digits, :cc_type => creditcard.cc_type, :first_name => creditcard.first_name, :last_name => creditcard.last_name, :month => creditcard.month, :year => creditcard.year).first
