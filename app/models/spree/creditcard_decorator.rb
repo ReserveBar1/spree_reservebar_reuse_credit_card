@@ -28,7 +28,15 @@ Spree::Creditcard.class_eval do
     Rails.logger.warn(" ----------------------- Processing retailer #{retailer.id}  ...")
     # Setup gateway for this retailer
     gateway = retailer.payment_method
-    gateway.set_provider(retailer.gateway_login, retailer.gateway_password)
+    if gateway.type == 'Spree::Gateway::BraintreeGateway'
+      gateway.set_provider(
+        retailer.bt_merchant_id, 
+        retailer.bt_public_key,
+        retailer.bt_private_key
+      )
+    else
+      gateway.set_provider(retailer.gateway_login, retailer.gateway_password)
+    end
     # test if the user already has a customer profile for this retailer, if not create it
     gateway_customer_profile_id = user.gateway_customer_profile_id_for_retailer(retailer)
     if gateway_customer_profile_id.blank?
