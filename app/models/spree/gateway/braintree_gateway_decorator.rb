@@ -17,5 +17,18 @@ Spree::Gateway::BraintreeGateway.class_eval do
       end
     end
   end
+  
+  def create_gateway_payment_profile(customer_profile_id, creditcard)
+    begin
+      result = Braintree::CreditCard.create(
+        customer_id: customer_profile_id,
+        number: creditcard.number,
+        expiration_date: "#{creditcard.month}/#{creditcard.year}",
+        cardholder_name: creditcard.first_name
+      )
+    rescue
+      raise 'Something went wrong communicating with Braintree'
+    end
+  end
 
 end

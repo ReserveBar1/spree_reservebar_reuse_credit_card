@@ -65,7 +65,11 @@ Spree::Creditcard.class_eval do
       result = gateway.create_gateway_payment_profile(gateway_customer_profile_id, creditcard)
       Rails.logger.warn("  ---------------------- Result:")
       Rails.logger.warn(result.inspect)
-      creditcard.update_attribute_without_callbacks(:gateway_payment_profile_id, result[:customer_payment_profile_id])
+      if result.class == Braintree::SuccessfulResult
+        creditcard.update_attribute_without_callbacks(:gateway_payment_profile_id, result.credit_card.token)
+      else
+        creditcard.update_attribute_without_callbacks(:gateway_payment_profile_id, result[:customer_payment_profile_id])
+      end
     end
 
   end
