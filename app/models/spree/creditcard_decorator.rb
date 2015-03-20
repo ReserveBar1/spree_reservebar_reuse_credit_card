@@ -1,12 +1,14 @@
 Spree::Creditcard.class_eval do
-  attr_accessible :number, :verification_value, :month, :year, :cc_type, :last_digits, :first_name, :last_name, :start_month, :start_year, :issue_number, :address_id, :created_at, :updated_at, :gateway_customer_profile_id, :gateway_payment_profile_id, :deleted_at
+  attr_accessible :number, :verification_value, :month, :year, :cc_type,
+    :last_digits, :first_name, :last_name, :start_month, :start_year,
+    :issue_number, :address_id, :created_at, :updated_at,
+    :gateway_customer_profile_id, :gateway_payment_profile_id, :deleted_at
 
   belongs_to :address
 
   def deleted?
     !!deleted_at
   end
-
 
   def self.tokenize_card_on_other_retailers(current_retailer, creditcard, user, card_number)
     # add card to customer profile for all other retailers, or create new customer profile and add card
@@ -21,12 +23,7 @@ Spree::Creditcard.class_eval do
     end
   end
 
-  # tokenize the card
-  # if the creditcard passed in has been saved, use it and update it - this is used for the original retailer
-  # if the card passed in is a new record, it is a duplicate of the original and needs to be saved
   def self.tokenize_card_for_retailer(creditcard, retailer, user, number)
-    Rails.logger.warn(" ----------------------- Processing retailer #{retailer.id}  ...")
-    # Setup gateway for this retailer
     gateway = retailer.payment_method
     if gateway.type == 'Spree::Gateway::BraintreeGateway'
       gateway.set_provider(
@@ -34,23 +31,32 @@ Spree::Creditcard.class_eval do
         retailer.bt_public_key,
         retailer.bt_private_key
       )
+      begin
+        result = gateway.find_or_create_customer_profile(user)
+        if result.class == Braintree::Customer
+          customer = result
+          gateway_customer_profile_id = result.id
+        else
+          raise result
+        end
+      rescue
+        raise 'Problem Connecting with Braintree'
+      end
     else
       gateway.set_provider(retailer.gateway_login, retailer.gateway_password)
-    end
-    # test if the user already has a customer profile for this retailer, if not create it
-    gateway_customer_profile_id = user.gateway_customer_profile_id_for_retailer(retailer)
-    if gateway_customer_profile_id.blank?
-      Rails.logger.warn(" ----------------------- Creating new customer profile for retailer #{retailer.id}  ...")
-      result = gateway.create_gateway_customer_profile(user, retailer)
-      Rails.logger.warn("  ---------------------- Result:")
-      Rails.logger.warn(result.inspect)
-      # TODO: error handlind of gateway errors
-      if result.class == Braintree::Customer
-        gateway_customer_profile_id = result.id
-      else
+      # test if the user already has a customer profile for this retailer, if not create it
+      gateway_customer_profile_id = user.gateway_customer_profile_id_for_retailer(retailer)
+      if gateway_customer_profile_id.blank?
+        Rails.logger.warn(" ----------------------- Creating new customer profile for retailer #{retailer.id} ...")
+        result = gateway.create_gateway_customer_profile(user, retailer)
+        Rails.logger.warn(" ---------------------- Result:")
+        Rails.logger.warn(result.inspect)
+        # TODO: error handlind of gateway errors
         gateway_customer_profile_id = result[:customer_profile_id]
       end
     end
+
+
     # test if this card is already tokenized for this retailer
     card = user.creditcards.where(:gateway_customer_profile_id => gateway_customer_profile_id, :last_digits => creditcard.last_digits, :cc_type => creditcard.cc_type, :first_name => creditcard.first_name, :last_name => creditcard.last_name, :month => creditcard.month, :year => creditcard.year).first
 
