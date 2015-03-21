@@ -2,9 +2,12 @@ Spree::Creditcard.class_eval do
   attr_accessible :number, :verification_value, :month, :year, :cc_type,
     :last_digits, :first_name, :last_name, :start_month, :start_year,
     :issue_number, :address_id, :created_at, :updated_at,
-    :gateway_customer_profile_id, :gateway_payment_profile_id, :deleted_at
+    :gateway_customer_profile_id, :gateway_payment_profile_id, :deleted_at,
+    :bt_merchant_id
 
   belongs_to :address
+
+  scope :active, where(deleted_at: nil)
 
   def deleted?
     !!deleted_at
@@ -89,7 +92,6 @@ Spree::Creditcard.class_eval do
         creditcard.update_attribute_without_callbacks(:gateway_payment_profile_id, result[:customer_payment_profile_id])
       end
     end
-
   end
 
   def update_address(attr = {})
