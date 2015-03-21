@@ -70,7 +70,11 @@ Spree::Creditcard.class_eval do
     # If not card exists yet, save the copy and tokenize it
     unless card
       creditcard.gateway_payment_profile_id = nil
-      creditcard.retailer_id = retailer.id
+      if gateway.type == 'Spree::Gateway::BraintreeGateway'
+         creditcard.bt_merchant_id = retailer.bt_merchant_id
+      else
+        creditcard.retailer_id = retailer.id
+      end
       creditcard.user_id = user.id
       creditcard.number = number
       creditcard.save!
