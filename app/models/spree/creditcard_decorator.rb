@@ -14,14 +14,28 @@ Spree::Creditcard.class_eval do
   end
 
   def self.tokenize_card_on_other_retailers(current_retailer, creditcard, user, card_number)
-    # add card to customer profile for all other retailers, or create new customer profile and add card
-    Spree::Retailer.active.each do |retailer|
-      next if retailer == current_retailer
-      next unless retailer.payment_method.respond_to?(:payment_profiles_supported?) && retailer.payment_method.payment_profiles_supported?
-      begin
-        Spree::Creditcard.tokenize_card_for_retailer(creditcard.dup, retailer, user, card_number)
-      rescue
-        # For now we don't care if this fails
+    gateway = current_retailer.payment_method
+    if gateway.type == 'Spree::Gateway::BraintreeGateway'
+      retailers = Spree::Retailer.active.select(:bt_merchant_id).all
+      retailer_merchant_accounts = retailers.map(&:bt_merchant_id).uniq
+      retailer_merchant_accounts.delete(creditcard.bt_merchant_id)
+      retailer_merchant_accounts.each do |account|
+        gateway_card = Spree::Creditcard.active.where(user_id: user.id, bt_merchant_id: account,:last_digits => creditcard.last_digits, :cc_type => creditcard.cc_type, :first_name => creditcard.first_name, :last_name => creditcard.last_name, :month => creditcard.month, :year => creditcard.year).first
+        unless gateway_card.present?
+          retailer = Spree::Retailer.active.where(bt_merchant_id: account).first
+          Spree::Creditcard.tokenize_card_for_retailer(creditcard, retailer, user, card_number)
+        end
+      end
+    else
+      # add card to customer profile for all other retailers, or create new customer profile and add card
+      Spree::Retailer.active.each do |retailer|
+        next if retailer == current_retailer
+        next unless retailer.payment_method.respond_to?(:payment_profiles_supported?) && retailer.payment_method.payment_profiles_supported?
+        begin
+          Spree::Creditcard.tokenize_card_for_retailer(creditcard.dup, retailer, user, card_number)
+        rescue
+          # For now we don't care if this fails
+        end
       end
     end
   end
@@ -37,7 +51,6 @@ Spree::Creditcard.class_eval do
       begin
         result = gateway.find_or_create_customer_profile(user)
         if result.class == Braintree::Customer
-          customer = result
           gateway_customer_profile_id = result.id
         else
           raise result
@@ -59,9 +72,12 @@ Spree::Creditcard.class_eval do
       end
     end
 
-
-    # test if this card is already tokenized for this retailer
-    card = user.creditcards.where(:gateway_customer_profile_id => gateway_customer_profile_id, :last_digits => creditcard.last_digits, :cc_type => creditcard.cc_type, :first_name => creditcard.first_name, :last_name => creditcard.last_name, :month => creditcard.month, :year => creditcard.year).first
+    if gateway.type == 'Spree::Gateway::BraintreeGateway'
+      card = user.creditcards.where(:gateway_customer_profile_id => gateway_customer_profile_id, :last_digits => creditcard.last_digits, :cc_type => creditcard.cc_type, :first_name => creditcard.first_name, :last_name => creditcard.last_name, :month => creditcard.month, :year => creditcard.year, :bt_merchant_id => retailer.bt_merchant_id).first
+    else
+      # test if this card is already tokenized for this retailer
+      card = user.creditcards.where(:gateway_customer_profile_id => gateway_customer_profile_id, :last_digits => creditcard.last_digits, :cc_type => creditcard.cc_type, :first_name => creditcard.first_name, :last_name => creditcard.last_name, :month => creditcard.month, :year => creditcard.year).first
+    end
 
     # check if the card passed in is a new record, then it needs to be saved before, otherwise it needs to be updated and tokenized only
     if creditcard.new_record?
@@ -71,11 +87,12 @@ Spree::Creditcard.class_eval do
     end
 
     # If not card exists yet, save the copy and tokenize it
-    unless card
-      creditcard.gateway_payment_profile_id = nil
+    unless card.present?
       if gateway.type == 'Spree::Gateway::BraintreeGateway'
-         creditcard.bt_merchant_id = retailer.bt_merchant_id
+        creditcard = creditcard.dup
+        creditcard.bt_merchant_id = retailer.bt_merchant_id
       else
+        creditcard.gateway_payment_profile_id = nil
         creditcard.retailer_id = retailer.id
       end
       creditcard.user_id = user.id
