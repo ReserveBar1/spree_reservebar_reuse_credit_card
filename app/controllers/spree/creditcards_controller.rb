@@ -8,9 +8,6 @@ module Spree
       @user = @creditcard.user
       authorize! :destroy, @creditcard
 
-      # TODO: think about the necessity of deleting payment profiles here.
-      # I'm thinking we want to always leave them alone
-
       if @creditcard.save
         delete_matching_credit_cards
         respond_with @creditcard
@@ -53,6 +50,24 @@ module Spree
 
     def delete_matching_credit_cards
       matching_credit_cards.each do |cc|
+        if cc.bt_merchant_id.present?
+          # delete payment methods on all merchant accounts
+          retailer = Spree::Retailer.active.where(bt_merchant_id: cc.bt_merchant_id).first
+          gateway = retailer.payment_method
+          gateway.set_provider(retailer.bt_merchant_id, 
+            retailer.bt_public_key, retailer.bt_private_key)
+          begin
+            card = Braintree::PaymentMethod.find(cc.gateway_payment_profile_id)
+            if card.is_a?(Braintree::CreditCard)
+              Braintree::PaymentMethod.delete(cc.gateway_payment_profile_id)
+            else
+              raise "Cannot find card #{cc.gateway_payment_profile_id} on account #{retailer.bt_merchant_id}"
+            end
+          rescue
+            raise 'Problem connecting with Braintree'
+          end
+        end
+        cc.gateway_payment_profile_id = nil
         cc.deleted_at = Time.now
         cc.save
       end
