@@ -38,7 +38,7 @@ Spree::CheckoutController.class_eval do
                 new_card.reload
                 creditcard = new_card
                 # Run tokenization for the other retailers in the background
-                Spree::Creditcard.tokenize_card_on_other_retailers(current_order.retailer, new_card, current_order.user, params[:card_number_confirm])
+                Spree::Creditcard.delay.tokenize_card_on_other_retailers(current_order.retailer, new_card, current_order.user, params[:card_number_confirm])
               rescue ActiveMerchant::ConnectionError => e
                 creditcard.send(:gateway_error, e)
               end
