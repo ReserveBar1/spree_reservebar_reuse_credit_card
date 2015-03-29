@@ -1,7 +1,10 @@
 Spree::Payment.class_eval do
-  attr_accessible :source, :source_attributes, :amount, :order_id, :created_at, :updated_at, :source_id, :source_type, :payment_method_id, :state, :response_code, :avs_response
-  
-  
+  attr_accessible :source, :source_attributes, :amount, :order_id,
+    :created_at, :updated_at, :source_id, :source_type, :payment_method_id,
+    :state, :response_code, :avs_response
+
+  before_save :create_payment_profile, :if => :profiles_supported?
+
   private
   # payment.after_save usually saves the credit card to the CIM gateway, if that is enabled. 
   # For reservebar, we need to save it to all retailer's gateways instead and make sure that they are added 
@@ -13,22 +16,27 @@ Spree::Payment.class_eval do
   rescue ActiveMerchant::ConnectionError => e
     source.send(:gateway_error, e)
   end
-  
+
   def create_payment_profile
     return unless source.is_a?(Spree::Creditcard) && source.number && !source.has_payment_profile?
     # If the user is not logged in, use the original function to just tokenize the user on a single retailer's gateway
     return create_payment_profile_original if (order.user.anonymous? || Spree::ReservebarReuseCreditCard::Config.enabled != true)
-    # Tokenize the card for the order's retailer
     card_number = source.number # save it for later so we can reload other items
     begin
-      Spree::Creditcard.tokenize_card_for_retailer(source, order.retailer, order.user, card_number)
+      # Tokenize the card for the order's retailer
+      # save return value
+      response = Spree::Creditcard.tokenize_card_for_retailer(source, order.retailer, order.user, card_number)
+      unless response.is_a?(Braintree::ErrorResult)
+        source.reload
+        # Run tokenization for the other retailers in the background
+        # only if successful before
+        Spree::Creditcard.tokenize_card_on_other_retailers(order.retailer, source, order.user, card_number)
+      else
+        source.send(:gateway_error, ' Make sure payment details were enterered corretly.')
+      end
     rescue ActiveMerchant::ConnectionError => e
       source.send(:gateway_error, e)
     end
-    source.reload
-    # Run tokenization for the other retailers in the background
-    Spree::Creditcard.delay.tokenize_card_on_other_retailers(order.retailer, source, order.user, card_number)
   end
-  
 
 end

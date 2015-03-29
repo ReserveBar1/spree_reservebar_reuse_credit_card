@@ -18,9 +18,12 @@ Spree::Gateway::BraintreeGateway.class_eval do
     begin
       result = Braintree::CreditCard.create(
         customer_id: customer_id,
+        cardholder_name: creditcard.first_name,
         number: creditcard.number,
         expiration_date: "#{creditcard.month}/#{creditcard.year}",
-        cardholder_name: creditcard.first_name
+        cvv: creditcard.verification_value,
+        billing_address: { postal_code: creditcard.address.zipcode },
+        options: { verify_card: true }
       )
     rescue
       raise 'Something went wrong communicating with Braintree'
