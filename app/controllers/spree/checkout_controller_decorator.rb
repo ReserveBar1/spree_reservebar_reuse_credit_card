@@ -10,7 +10,7 @@ Spree::CheckoutController.class_eval do
     current_order.bill_address = Spree::Address.default
     @cards = all_cards_for_user(@order.user, @order.retailer)
   end
-  
+
   # we are overriding this method in order to substitue in the exisiting card information
   # since we are also storing the billing address with the existing credit cards, we need to get it from the credit card
   # and dump it into the order:bill_address_id
@@ -18,7 +18,26 @@ Spree::CheckoutController.class_eval do
     # For payment step, filter order parameters to produce the expected nested attributes for a single payment and its source, discarding attributes for payment methods other than the one selected
     if @order.payment?
       if params[:payment_source].present? && source_params = params.delete(:payment_source)[params[:order][:payments_attributes].first[:payment_method_id].underscore]
-        source_params[:address_id] = params[:order][:bill_address_id]
+
+        if params[:order][:bill_address_id] != '0'
+          source_params[:address_id] = params[:order][:bill_address_id]
+        elsif params[:bill_address].present?
+          @order.bill_address_attributes = params[:bill_address]
+          bill_address = @order.bill_address
+          if bill_address && bill_address.valid?
+            @order.update_attribute_without_callbacks(:bill_address_id, bill_address.id)
+            bill_address.update_attribute(:user_id, current_user.id) if current_user
+            params[:order].delete(:bill_address_id)
+            object_params.delete(:bill_address_id)
+          else
+            raise Exceptions::NewBillAddressError
+          end
+          @order.reload
+          source_params[:address_id] = @order.bill_address_id
+        else
+          raise 'No Billing Address'
+        end
+
         if params[:existing_card]
           creditcard = Spree::Creditcard.find(params[:existing_card])
           gateway = current_order.retailer.payment_method
@@ -60,4 +79,3 @@ Spree::CheckoutController.class_eval do
   end
 
 end
-
