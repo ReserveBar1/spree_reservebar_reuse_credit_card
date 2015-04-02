@@ -12,7 +12,17 @@ Spree::Payment.class_eval do
   # We only do that for logged-in users, for logged-out users, we simply tokenize the card in the old fashioned way.
   def create_payment_profile_original
     return unless source.is_a?(Spree::Creditcard) && source.number && !source.has_payment_profile?
-    payment_method.create_profile(self)
+    if payment_method.type == 'Spree::Gateway::BraintreeGateway'
+      source.update_attributes(address_id: order.bill_address_id)
+      result = Spree::Creditcard.tokenize_card_for_retailer(source,
+        order.retailer, order.email, source.number)
+      if result.is_a?(Braintree::ErrorResult)
+        source.send(:gateway_error,
+          ' Make sure payment details were enterered correctly.')
+      end
+    else
+      payment_method.create_profile(self)
+    end
   rescue ActiveMerchant::ConnectionError => e
     source.send(:gateway_error, e)
   end
@@ -32,7 +42,8 @@ Spree::Payment.class_eval do
         # only if successful before
         Spree::Creditcard.tokenize_card_on_other_retailers(order.retailer, source, order.user, card_number)
       else
-        source.send(:gateway_error, ' Make sure payment details were enterered corretly.')
+        source.send(:gateway_error,
+          ' Make sure payment details were enterered correctly.')
       end
     rescue ActiveMerchant::ConnectionError => e
       source.send(:gateway_error, e)

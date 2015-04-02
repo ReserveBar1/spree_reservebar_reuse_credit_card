@@ -49,8 +49,16 @@ Spree::Creditcard.class_eval do
         retailer.bt_private_key
       )
       begin
-        result = gateway.find_or_create_customer_profile(user)
+        # Create customer profiles on Braintree
+        if user.is_a?(Spree::User)
+          # if User is logged in
+          result = gateway.find_or_create_customer_profile(user)
+        else
+          # if guest checkout
+          result = gateway.create_guest_profile(user)
+        end
         if result.class == Braintree::Customer
+          # if successful, set the profile id
           gateway_customer_profile_id = result.id
         else
           raise result
@@ -73,7 +81,9 @@ Spree::Creditcard.class_eval do
     end
 
     if gateway.type == 'Spree::Gateway::BraintreeGateway'
-      card = user.creditcards.where(:gateway_customer_profile_id => gateway_customer_profile_id, :last_digits => creditcard.last_digits, :cc_type => creditcard.cc_type, :first_name => creditcard.first_name, :last_name => creditcard.last_name, :month => creditcard.month, :year => creditcard.year, :bt_merchant_id => retailer.bt_merchant_id).first
+      if user.is_a?(Spree::User)
+        card = user.creditcards.where(:gateway_customer_profile_id => gateway_customer_profile_id, :last_digits => creditcard.last_digits, :cc_type => creditcard.cc_type, :first_name => creditcard.first_name, :last_name => creditcard.last_name, :month => creditcard.month, :year => creditcard.year, :bt_merchant_id => retailer.bt_merchant_id).first
+      end
     else
       # test if this card is already tokenized for this retailer
       card = user.creditcards.where(:gateway_customer_profile_id => gateway_customer_profile_id, :last_digits => creditcard.last_digits, :cc_type => creditcard.cc_type, :first_name => creditcard.first_name, :last_name => creditcard.last_name, :month => creditcard.month, :year => creditcard.year).first
@@ -94,7 +104,7 @@ Spree::Creditcard.class_eval do
         creditcard.gateway_payment_profile_id = nil
         creditcard.retailer_id = retailer.id
       end
-      creditcard.user_id = user.id
+      creditcard.user_id = user.id if user.is_a?(Spree::User)
       creditcard.number = number
       creditcard.save!
       Rails.logger.warn(" ----------------------- Tokenizing new card with number #{creditcard.number} for retailer #{retailer.id} ...")
