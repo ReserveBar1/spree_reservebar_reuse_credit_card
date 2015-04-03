@@ -9,6 +9,10 @@ Spree::Creditcard.class_eval do
 
   scope :active, where(deleted_at: nil)
 
+  def expired?
+    DateTime.new(year.to_i, month.to_i + 1) < Time.now
+  end
+
   def deleted?
     !!deleted_at
   end

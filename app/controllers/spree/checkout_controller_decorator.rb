@@ -9,6 +9,7 @@ Spree::CheckoutController.class_eval do
     current_order.payments.destroy_all if request.put?
     current_order.bill_address = Spree::Address.default
     @cards = all_cards_for_user(@order.user, @order.retailer)
+    @cards = @cards.reject { |c| c.expired? }
   end
 
   # we are overriding this method in order to substitue in the exisiting card information
