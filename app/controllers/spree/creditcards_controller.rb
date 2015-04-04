@@ -32,12 +32,7 @@ module Spree
 
       # Verify billing zip code with Braintree
       if @creditcard.bt_merchant_id.present?
-        account = @creditcard.bt_merchant_id
-        retailer = Spree::Retailer.active.where(bt_merchant_id: account).first
-        gateway = Spree::PaymentMethod.find_by_type('Spree::Gateway::BraintreeGateway')
-        gateway.set_provider(retailer.bt_merchant_id, retailer.bt_public_key,
-          retailer.bt_private_key)
-        result = gateway.update_billing_address_for_profile(@creditcard,
+        result = send_zipcode_to_braintree(@creditcard,
           params[:address][:zipcode])
         if result.is_a?(Braintree::ErrorResult)
           flash[:error] = 'Billing address does not match card. Please make sure details are correct.'
@@ -46,13 +41,35 @@ module Spree
       end
 
       if @creditcard.update_address(params[:address])
-        flash[:notice] = I18n.t(:successfully_updated, :resource => I18n.t(:address))
+        @user = @creditcard.user
+        matching = matching_credit_cards.reject { |c| c.id == @creditcard.id }
+        matching.each do |card|
+          card.update_attributes(address_id: @creditcard.address_id)
+          card.verification_value = params[:cvv]
+          result = send_zipcode_to_braintree(card, params[:address][:zipcode])
+          if result.is_a?(Braintree::ErrorResult)
+            flash[:error] = 'Problem occured updating the billing address on payment gateway.'
+            redirect_to spree.edit_creditcard_url(@creditcard) and return
+          end
+        end
+        flash[:notice] = I18n.t(:successfully_updated,
+          :resource => I18n.t(:address))
       else
+        raise 'Error updating creditcard address'
       end
       redirect_back_or_default(account_path)
     end
 
     private
+
+    def send_zipcode_to_braintree(creditcard, zipcode)
+      account = creditcard.bt_merchant_id
+      retailer = Spree::Retailer.active.where(bt_merchant_id: account).first
+      gateway = Spree::PaymentMethod.find_by_type('Spree::Gateway::BraintreeGateway')
+      gateway.set_provider(retailer.bt_merchant_id, retailer.bt_public_key,
+        retailer.bt_private_key)
+      gateway.update_billing_address_for_profile(creditcard, zipcode)
+    end
 
     def matching_credit_cards
       conditions = {:month => @creditcard.month,
