@@ -35,4 +35,20 @@ Spree::Gateway::BraintreeGateway.class_eval do
     end
   end
 
+  def update_billing_address_for_profile(creditcard, zipcode)
+    begin
+      result = Braintree::PaymentMethod.update(
+        creditcard.gateway_payment_profile_id,
+        cvv: creditcard.verification_value,
+        billing_address: {
+          postal_code: zipcode,
+          options: { update_existing: true }
+        },
+        options: { verify_card: true }
+      )
+    rescue
+      raise 'Something went wrong communicating with Braintree'
+    end
+  end
+
 end

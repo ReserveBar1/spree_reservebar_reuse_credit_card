@@ -28,6 +28,22 @@ module Spree
 
     def update
       @creditcard = Spree::Creditcard.find(params[:id])
+      @creditcard.verification_value = params[:cvv]
+
+      # Verify billing zip code with Braintree
+      if @creditcard.bt_merchant_id.present?
+        account = @creditcard.bt_merchant_id
+        retailer = Spree::Retailer.active.where(bt_merchant_id: account).first
+        gateway = Spree::PaymentMethod.find_by_type('Spree::Gateway::BraintreeGateway')
+        gateway.set_provider(retailer.bt_merchant_id, retailer.bt_public_key,
+          retailer.bt_private_key)
+        result = gateway.update_billing_address_for_profile(@creditcard,
+          params[:address][:zipcode])
+        if result.is_a?(Braintree::ErrorResult)
+          flash[:error] = 'Billing address does not match card. Please make sure details are correct.'
+          redirect_to spree.edit_creditcard_url(@creditcard) and return
+        end
+      end
 
       if @creditcard.update_address(params[:address])
         flash[:notice] = I18n.t(:successfully_updated, :resource => I18n.t(:address))
