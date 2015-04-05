@@ -40,7 +40,7 @@ Spree::Payment.class_eval do
         source.reload
         # Run tokenization for the other retailers in the background
         # only if successful before
-        Spree::Creditcard.tokenize_card_on_other_retailers(order.retailer, source, order.user, card_number)
+        Spree::Creditcard.tokenize_card_on_other_retailers(order.retailer.id, source, order.user.id, card_number)
       else
         source.send(:gateway_error,
           ' Make sure payment details were enterered correctly.')

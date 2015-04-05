@@ -17,7 +17,11 @@ Spree::Creditcard.class_eval do
     !!deleted_at
   end
 
-  def self.tokenize_card_on_other_retailers(current_retailer, creditcard, user, card_number)
+  def self.tokenize_card_on_other_retailers(current_retailer_id, creditcard,
+    user_id, card_number)
+    current_retailer = Spree::Retailer.find(current_retailer_id)
+    user = Spree::User.find(user_id)
+
     gateway = current_retailer.payment_method
     if gateway.type == 'Spree::Gateway::BraintreeGateway'
       retailers = Spree::Retailer.active.select(:bt_merchant_id).all
