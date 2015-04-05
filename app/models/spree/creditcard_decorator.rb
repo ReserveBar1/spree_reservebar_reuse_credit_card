@@ -18,9 +18,10 @@ Spree::Creditcard.class_eval do
   end
 
   def self.tokenize_card_on_other_retailers(current_retailer_id, creditcard,
-    user_id, card_number)
+    user_id, card_number, cvv)
     current_retailer = Spree::Retailer.find(current_retailer_id)
     user = Spree::User.find(user_id)
+    creditcard.verification_value = cvv
 
     gateway = current_retailer.payment_method
     if gateway.type == 'Spree::Gateway::BraintreeGateway'
@@ -31,7 +32,10 @@ Spree::Creditcard.class_eval do
         gateway_card = Spree::Creditcard.active.where(user_id: user.id, bt_merchant_id: account,:last_digits => creditcard.last_digits, :cc_type => creditcard.cc_type, :first_name => creditcard.first_name, :last_name => creditcard.last_name, :month => creditcard.month, :year => creditcard.year).first
         unless gateway_card.present?
           retailer = Spree::Retailer.active.where(bt_merchant_id: account).first
-          Spree::Creditcard.tokenize_card_for_retailer(creditcard.dup, retailer, user, card_number)
+          response = Spree::Creditcard.tokenize_card_for_retailer(creditcard.dup, retailer, user, card_number)
+          if response.is_a?(Braintree::ErrorResult)
+            raise response.errors
+          end
         end
       end
     else
