@@ -17,12 +17,16 @@ module CardReuse
     if retailer
       # get cards tokenized for this retailer:
       creditcards = user.creditcards_for_retailer(retailer)
-      # get all unique tokenized cards, so we can show cards tokenized for another retailer too
-      creditcards_all_retailers = user.unique_tokenized_cards
-      # merge them together, using the ones for this retailer preferred
-      creditcards_all_retailers.each do |creditcard|
-        unless creditcards.map(&:card_data).include?(creditcard.card_data)
-          creditcards << creditcard
+
+      gateway = current_order.retailer.payment_method
+      unless gateway.type == 'Spree::Gateway::BraintreeGateway'
+        # get all unique tokenized cards, so we can show cards tokenized for another retailer too
+        creditcards_all_retailers = user.unique_tokenized_cards
+        # merge them together, using the ones for this retailer preferred
+        creditcards_all_retailers.each do |creditcard|
+          unless creditcards.map(&:card_data).include?(creditcard.card_data)
+            creditcards << creditcard
+          end
         end
       end
       creditcards

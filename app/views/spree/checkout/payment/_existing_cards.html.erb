@@ -42,7 +42,7 @@
       <tbody>
         <% @cards.each do |card| %>
           <tr id="<%= dom_id(card,'spree')%>" class="<%= cycle('even', 'odd') %>">
-          	<td><%= radio_button_tag "existing_card", card.id, (@cards.count == 1), :requires_cardnumber => card.retailer_id != @order.retailer.id %></td> <%# if we only have 1 saved card, autoselect %>
+            <td><%= radio_button_tag "existing_card", card.id, (@cards.count == 1), :requires_cardnumber => card.retailer_id != @order.retailer.id %></td> <%# if we only have 1 saved card, autoselect %>
             <td><%= card.name %></td>
             <td><%= card.display_number %></td>
             <td><%= "#{card.month}/#{card.year}" %></td>
@@ -51,19 +51,19 @@
       </tbody>
     </table>
 
-	<% if (@cards.map(&:retailer_id) - [@order.retailer.id]).count > 0 %>
-		<div style="display:none;" id="reenter_card_details">
-			<p>Please re-enter your credit card details for the selected card ending in <span id="select-card-for-reuse"></span> for security purposes. We may ask users from time to time to do this as an enhanced security measure.</p>
-			<label>Card Number: </label><br />
-			<%= text_field_tag "card_number_confirm", '', :size => 19 %><br />
-			<label>Card Code:</label><br />
-			<%= text_field_tag "card_cvv_confirm", '', :size => 5 %>
-		</div>
-	<% end %>
+  <% gateway = @order.retailer.payment_method %>
+  <% unless gateway.type == 'Spree::Gateway::BraintreeGateway' %>
+    <% if (@cards.map(&:retailer_id) - [@order.retailer.id]).count > 0 %>
+      <div style="display:none;" id="reenter_card_details">
+        <p>Please re-enter your credit card details for the selected card ending in <span id="select-card-for-reuse"></span> for security purposes. We may ask users from time to time to do this as an enhanced security measure.</p>
+        <label>Card Number: </label><br />
+        <%= text_field_tag "card_number_confirm", '', :size => 19 %><br />
+        <label>Card Code:</label><br />
+        <%= text_field_tag "card_cvv_confirm", '', :size => 5 %>
+      </div>
+    <% end %>
+  <% end %>
   </p>
 </div> <!-- existing_cards -->
 
 <% end %>
-
-
-
