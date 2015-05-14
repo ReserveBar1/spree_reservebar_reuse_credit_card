@@ -1,10 +1,5 @@
 Spree::Gateway::BraintreeGateway.class_eval do
 
-  def create_guest_profile(user)
-    result = Braintree::Customer.create(email: user)
-    return result.success? ? result.customer : result.errors.first.message
-  end
-
   def find_or_create_customer_profile(user)
     begin
       braintree_customer = Braintree::Customer.find("RB#{user.id}")

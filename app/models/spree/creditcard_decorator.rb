@@ -63,11 +63,7 @@ Spree::Creditcard.class_eval do
       begin
         # Create customer profiles on Braintree
         if user.is_a?(Spree::User)
-          # if User is logged in
           result = gateway.find_or_create_customer_profile(user)
-        else
-          # if guest checkout
-          result = gateway.create_guest_profile(user)
         end
         if result.class == Braintree::Customer
           # if successful, set the profile id
