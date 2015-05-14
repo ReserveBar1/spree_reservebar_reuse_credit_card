@@ -3,7 +3,28 @@ Spree::Admin::PaymentsController.class_eval do
   def create
     @payment = @order.payments.build(object_params)
     if @payment.payment_method.is_a?(Spree::Gateway) && @payment.payment_method.payment_profiles_supported? && params[:card].present? and params[:card] != 'new'
-      @payment.source = Creditcard.find_by_id(params[:card])
+      @payment.source = Spree::Creditcard.find_by_id(params[:card])
+    end
+
+    if @order.completed? && @payment.amount < 0
+      if @payment.payment_method.type == "Spree::Gateway::BraintreeGateway"
+        gateway = @order.retailer.payment_method
+        trans_id = @order.payments.where(state: 'completed').first.response_code
+        amt = @payment.amount.to_f.abs.to_s
+        response = gateway.refund(trans_id, amt)
+        if response.is_a?(Braintree::SuccessfulResult)
+          @payment.response_code = response.transaction.id
+          @payment.state = 'completed'
+          @payment.save
+          flash[:notice] = 'Credit successfully created.'
+        elsif response.is_a?(Braintree::ErrorResult)
+          flash[:error] = 'Payment Errors: '
+          flash[:error] += response.errors.map(&:message).to_sentence
+        else
+          flash[:error] = response
+        end
+        redirect_to admin_order_payments_path(@order) and return
+      end
     end
 
     begin

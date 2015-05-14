@@ -46,4 +46,12 @@ Spree::Gateway::BraintreeGateway.class_eval do
     end
   end
 
+  def refund(transaction_id, amount)
+    begin
+      result = Braintree::Transaction.refund(transaction_id, amount)
+    rescue
+      return 'Something went wrong communicating with Braintree'
+    end
+  end
+
 end
