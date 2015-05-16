@@ -89,6 +89,14 @@
             </p>
           <% end %>
 
+          <p> Please verify the security code on your credit card again</p>
+          <div style='padding-bottom: 30px;'>
+            <%= label_tag :cvv, 'Securty Code (CVV):' %>
+            <div style='width: 50px'>
+              <%= text_field_tag :cvv %>
+            </div>
+          </div>
+
         </div>
       </div>
       <%= f.submit t(:update) %>
