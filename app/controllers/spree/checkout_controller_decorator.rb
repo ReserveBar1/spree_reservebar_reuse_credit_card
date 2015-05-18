@@ -72,7 +72,7 @@ Spree::CheckoutController.class_eval do
           params[:order][:payments_attributes].first[:source_attributes] = source_params
         end
       end
-      if (params[:order][:payments_attributes])
+      if params[:order].present? && params[:order][:payments_attributes].present?
         params[:order][:payments_attributes].first[:amount] = @order.total
       end
     end
