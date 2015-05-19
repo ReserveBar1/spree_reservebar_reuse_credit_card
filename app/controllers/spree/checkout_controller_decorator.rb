@@ -20,7 +20,7 @@ Spree::CheckoutController.class_eval do
     if @order.payment?
       if params[:payment_source].present? && source_params = params.delete(:payment_source)[params[:order][:payments_attributes].first[:payment_method_id].underscore]
 
-        if params[:order][:bill_address_id].present?
+        if params[:order][:bill_address_id].present? && params[:order][:bill_address_id] != '0'
           source_params[:address_id] = params[:order][:bill_address_id]
         elsif params[:bill_address].present?
           @order.bill_address_attributes = params[:bill_address]
