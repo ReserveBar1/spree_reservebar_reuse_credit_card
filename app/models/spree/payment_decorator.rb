@@ -5,6 +5,14 @@ Spree::Payment.class_eval do
 
   before_save :create_payment_profile, :if => :profiles_supported?
 
+  def build_source
+    return if source_attributes.nil?
+    if payment_method and payment_method.payment_source_class
+      self.source = payment_method.payment_source_class.new(source_attributes)
+      self.source.device_data = source_attributes[:device_data]
+    end
+  end
+
   private
   # payment.after_save usually saves the credit card to the CIM gateway, if that is enabled. 
   # For reservebar, we need to save it to all retailer's gateways instead and make sure that they are added 

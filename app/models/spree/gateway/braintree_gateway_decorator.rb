@@ -23,6 +23,7 @@ Spree::Gateway::BraintreeGateway.class_eval do
         expiration_date: "#{creditcard.month}/#{creditcard.year}",
         cvv: creditcard.verification_value,
         billing_address: { postal_code: creditcard.address.zipcode },
+        device_data: creditcard.device_data,
         options: { verify_card: true }
       )
     rescue

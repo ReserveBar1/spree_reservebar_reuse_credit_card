@@ -5,6 +5,9 @@ Spree::Creditcard.class_eval do
     :gateway_customer_profile_id, :gateway_payment_profile_id, :deleted_at,
     :bt_merchant_id
 
+  attr_accessor :device_data
+  validates :device_data, :presence => true, :unless => :has_payment_profile?, :on => :create
+
   belongs_to :address
 
   scope :active, where(deleted_at: nil)

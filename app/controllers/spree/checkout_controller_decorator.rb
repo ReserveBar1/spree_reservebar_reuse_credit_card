@@ -69,6 +69,7 @@ Spree::CheckoutController.class_eval do
           params[:order][:payments_attributes].first[:source] = creditcard
           params[:order][:bill_address_id] = creditcard.address_id
         else
+          source_params[:device_data] = params[:device_data]
           params[:order][:payments_attributes].first[:source_attributes] = source_params
         end
       end
