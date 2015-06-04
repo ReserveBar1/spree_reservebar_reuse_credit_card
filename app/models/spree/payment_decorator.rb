@@ -36,8 +36,21 @@ Spree::Payment.class_eval do
         # only if successful before
         Spree::Creditcard.delay.tokenize_card_on_other_retailers(order.retailer.id, source, order.user.id, card_number, source.verification_value)
       else
-        source.send(:gateway_error,
-          ' Make sure payment details were enterered correctly.')
+        error = response.try(:credit_card_verification).try(:gateway_rejection_reason)
+        if error.present?
+          if error == 'avs'
+            err_msg = ' Please verify billing information is correct.'
+          elsif error == 'fraud'
+            err_msg = ' WARNING! Fraudulent activity detected for this card. Contact your credit card provider immediately.'
+          else
+            err_msg = ' Make sure payment details were enterered correctly.'
+          end
+        elsif response.errors.present?
+          err_msg = ' Please verify credit card details are correct.'
+        else
+          err_msg = ' Make sure payment details were enterered correctly.'
+        end
+        source.send(:gateway_error, err_msg)
       end
     rescue ActiveMerchant::ConnectionError => e
       source.send(:gateway_error, e)
