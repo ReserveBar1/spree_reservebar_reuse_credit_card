@@ -119,7 +119,6 @@ Spree::Creditcard.class_eval do
       creditcard.number = number
       creditcard.save!
       Rails.logger.warn(" ----------------------- Tokenizing new card with number #{creditcard.number} for retailer #{retailer.id} ...")
-      Rails.logger.warn(creditcard.inspect)
       result = gateway.create_gateway_payment_profile(gateway_customer_profile_id, creditcard)
       Rails.logger.warn("  ---------------------- Result:")
       Rails.logger.warn(result.inspect)
