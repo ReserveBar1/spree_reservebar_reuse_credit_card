@@ -13,7 +13,13 @@ Spree::Creditcard.class_eval do
   scope :active, where(deleted_at: nil)
 
   def expired?
-    DateTime.new(year.to_i, month.to_i + 1) < Time.now
+    exp_year = year.to_i
+    exp_month = month.to_i + 1
+    if exp_month > 12
+      exp_month = 1
+      exp_year += 1
+    end
+    DateTime.new(exp_year, exp_month) < Time.now
   end
 
   def deleted?
@@ -59,7 +65,7 @@ Spree::Creditcard.class_eval do
     gateway = retailer.payment_method
     if gateway.type == 'Spree::Gateway::BraintreeGateway'
       gateway.set_provider(
-        retailer.bt_merchant_id, 
+        retailer.bt_merchant_id,
         retailer.bt_public_key,
         retailer.bt_private_key
       )
