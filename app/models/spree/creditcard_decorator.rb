@@ -124,13 +124,15 @@ Spree::Creditcard.class_eval do
       creditcard.user_id = user.id if user.is_a?(Spree::User)
       creditcard.number = number
       creditcard.save!
-      Rails.logger.warn(" ----------------------- Tokenizing new card with number #{creditcard.number} for retailer #{retailer.id} ...")
       result = gateway.create_gateway_payment_profile(gateway_customer_profile_id, creditcard)
-      Rails.logger.warn("  ---------------------- Result:")
-      Rails.logger.warn(result.inspect)
       if result.is_a?(Braintree::SuccessfulResult)
-        creditcard.update_attribute_without_callbacks(:gateway_payment_profile_id, result.credit_card.token)
-        creditcard.update_attribute_without_callbacks(:bin, result.credit_card.bin)
+        bt_card = result.credit_card
+        creditcard.gateway_payment_profile_id = bt_card.token
+        creditcard.bin = bt_card.bin
+        verification = bt_card.verification
+        creditcard.avs_postal_code_response_code = verification.avs_postal_code_response_code
+        creditcard.cvv_response_code = verification.cvv_response_code
+        creditcard.save!
       elsif result.is_a?(Braintree::ErrorResult)
         creditcard.update_attributes(deleted_at: Time.now)
         return result
