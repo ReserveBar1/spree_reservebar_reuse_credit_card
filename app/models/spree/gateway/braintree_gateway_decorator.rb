@@ -47,6 +47,19 @@ Spree::Gateway::BraintreeGateway.class_eval do
     end
   end
 
+  def authorize(amount, token, order_number)
+    begin
+      result = Braintree::Transaction.sale(
+        payment_method_token: token,
+        amount: amount,
+        order_id: order_number,
+        options: { submit_for_settlement: false}
+      )
+    rescue
+      raise 'Something went wrong communicating with Braintree'
+    end
+  end
+
   def refund(transaction_id, amount)
     begin
       result = Braintree::Transaction.refund(transaction_id, amount)

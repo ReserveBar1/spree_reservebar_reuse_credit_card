@@ -63,47 +63,25 @@ Spree::Creditcard.class_eval do
 
   def self.tokenize_card_for_retailer(creditcard, retailer, user, number)
     gateway = retailer.payment_method
-    if gateway.type == 'Spree::Gateway::BraintreeGateway'
-      gateway.set_provider(
-        retailer.bt_merchant_id,
-        retailer.bt_public_key,
-        retailer.bt_private_key
-      )
-      begin
-        # Create customer profiles on Braintree
-        if user.is_a?(Spree::User)
-          result = gateway.find_or_create_customer_profile(user)
-        end
-        if result.class == Braintree::Customer
-          # if successful, set the profile id
-          gateway_customer_profile_id = result.id
-        else
-          raise result
-        end
-      rescue
-        raise 'Problem Connecting with Braintree'
+    gateway.set_provider(retailer.bt_merchant_id, retailer.bt_public_key, retailer.bt_private_key)
+    # Find or create customer profile on Braintree
+    # TODO: we can save this to the user model and save the trouble, how would that effect guest accounts?
+    begin
+      if user.is_a?(Spree::User)
+        result = gateway.find_or_create_customer_profile(user)
       end
-    else
-      gateway.set_provider(retailer.gateway_login, retailer.gateway_password)
-      # test if the user already has a customer profile for this retailer, if not create it
-      gateway_customer_profile_id = user.gateway_customer_profile_id_for_retailer(retailer)
-      if gateway_customer_profile_id.blank?
-        Rails.logger.warn(" ----------------------- Creating new customer profile for retailer #{retailer.id} ...")
-        result = gateway.create_gateway_customer_profile(user, retailer)
-        Rails.logger.warn(" ---------------------- Result:")
-        Rails.logger.warn(result.inspect)
-        # TODO: error handlind of gateway errors
-        gateway_customer_profile_id = result[:customer_profile_id]
+      if result.class == Braintree::Customer
+        # if successful, set the profile id
+        gateway_customer_profile_id = result.id
+      else
+        raise result
       end
+    rescue
+      raise 'Problem Connecting with Braintree'
     end
 
-    if gateway.type == 'Spree::Gateway::BraintreeGateway'
-      if user.is_a?(Spree::User)
-        card = user.creditcards.where(:gateway_customer_profile_id => gateway_customer_profile_id, :last_digits => creditcard.last_digits, :cc_type => creditcard.cc_type, :first_name => creditcard.first_name, :last_name => creditcard.last_name, :month => creditcard.month, :year => creditcard.year, :bt_merchant_id => retailer.bt_merchant_id).first
-      end
-    else
-      # test if this card is already tokenized for this retailer
-      card = user.creditcards.where(:gateway_customer_profile_id => gateway_customer_profile_id, :last_digits => creditcard.last_digits, :cc_type => creditcard.cc_type, :first_name => creditcard.first_name, :last_name => creditcard.last_name, :month => creditcard.month, :year => creditcard.year).first
+    if user.is_a?(Spree::User)
+      card = user.creditcards.where(:gateway_customer_profile_id => gateway_customer_profile_id, :last_digits => creditcard.last_digits, :cc_type => creditcard.cc_type, :first_name => creditcard.first_name, :last_name => creditcard.last_name, :month => creditcard.month, :year => creditcard.year, :bt_merchant_id => retailer.bt_merchant_id).first
     end
 
     # check if the card passed in is a new record, then it needs to be saved before, otherwise it needs to be updated and tokenized only
